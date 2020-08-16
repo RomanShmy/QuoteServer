@@ -118,14 +118,6 @@ namespace MainServer
                     quote.Does = await does;
                     quote.What = await what;
                     
-                    // foreach(var path in paths)
-                    // {
-                        
-                    //     string url = GetRandomUrl(urls);
-                    //     result.Append(GetDataFromUrl(url, path)).Append(" ");
-                        
-                    // }
-                    
                     DateTime finish = DateTime.Now;
                     Console.WriteLine(finish - start);
                     context.Response.Headers.Add("InCamp-Student", "Shmyhol Roman");
@@ -209,65 +201,6 @@ namespace MainServer
 
             return await Task.Run(()=>usr.Operation);   
         }
-        
-
-        
-        // public string GetDataFromUrl(string url, string path)
-        // { 
-        //     try
-        //     {
-        //         return RequestToAnotherServer(url, path);
-        //     }
-        //     catch (WebException)
-        //     {
-        //         return RequestToLocalServer(url, path);
-        //     }
-        // }
-        // public string RequestToAnotherServer(string url, string path)
-        // {
-        //     string word;
-        //     User usr = new User();
-
-        //     HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url+path);
-
-        //     using(WebResponse response = httpWebRequest.GetResponse())
-        //     using(Stream dataStream = response.GetResponseStream())
-        //     using(StreamReader reader = new StreamReader(dataStream))
-        //     {
-                
-        //         string userName = response.Headers.GetValues("InCamp-Student").First();
-        //         word = reader.ReadToEnd();
-                
-        //         usr.Name = userName;
-        //         usr.Operation = word; 
-        //         users.AddUser(usr);
-        //     }
-
-        //     return usr.Operation;   
-        // }
-        //  public string RequestToLocalServer(string url, string path)
-        // {
-        //     const string mainUrl = "http://localhost:56555/";
-        //     string word;
-        //     User usr = new User();
-
-        //     HttpWebRequest httpWebRequest = WebRequest.CreateHttp(mainUrl+path);
-
-        //     using(WebResponse response = httpWebRequest.GetResponse())
-        //     using(Stream dataStream = response.GetResponseStream())
-        //     using(StreamReader reader = new StreamReader(dataStream))
-        //     {
-                
-        //         string userName = response.Headers.GetValues("InCamp-Student").First();
-        //         word = reader.ReadToEnd();
-                
-        //         usr.Name = $"{userName}, because {url} doesn't have response!";
-        //         usr.Operation = word; 
-        //         users.AddUser(usr);
-        //     }
-
-        //     return usr.Operation;   
-        // }
         
     }
 }
