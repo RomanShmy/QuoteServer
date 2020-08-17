@@ -1,3 +1,4 @@
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Net;
 using System;
@@ -12,21 +13,38 @@ using Microsoft.Extensions.Hosting;
 using System.IO;
 using System.Net.Http;
 using System.Net.Sockets;
+using System.Threading;
+using MainServer.strategy;
+using Microsoft.Extensions.Configuration;
 
 namespace MainServer
 {
     public class Startup
     {
-        private UsersList users;
-
-        public Startup()
+        private IHttpRequest request;
+        private Profiler profiler;
+        public Startup(IConfiguration configuration)
         {
-            users = new UsersList();
+            Configuration = configuration;
+            profiler = new Profiler();
+            try
+            {
+                request = GetHttpRequest(configuration.GetValue<string>("arg"));
+            }
+            catch
+            {
+                request = GetHttpRequest();
+            }
+            
         }
+
+        private IConfiguration Configuration { get; }
+        
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -41,12 +59,25 @@ namespace MainServer
 
             app.UseEndpoints(endpoints =>
             {
-                Quote quote = new Quote();
+                
+                string[] paths = {"who", "how", "does", "what"}; 
                 string[] who = {"Барсик", "Мой друг", "Собака"};
                 string[] how = {"красиво", "глупо", "плохо"};
                 string[] does = {"пишет", "рисует", "танцует"};
                 string[] what = {"код", "танго", "море"};
-
+                string[] urls = {"http://d0165c8e5358.ngrok.io/",
+                                     "http://12f1a14e7e50.ngrok.io/",
+                                     "http://4c1449a93861.ngrok.io/",
+                                     "http://7a45a5f78857.ngrok.io/",
+                                     "http://e77fd3b7ed59.ngrok.io/",
+                                     "http://a089177a583a.ngrok.io/",
+                                     "http://aba617d86eae.ngrok.io/",
+                                     "http://26b139b05b0f.ngrok.io/",
+                                     "http://17f7ddd05769.ngrok.io/",
+                                     "http://5e9e572e07b3.ngrok.io/",
+                                     "https://8a2f59ef9085.ngrok.io/",
+                                     "http://67e5aa89deb6.ngrok.io/"
+                                    };
                 
                 endpoints.MapGet("/", async context =>
                 {
@@ -55,32 +86,32 @@ namespace MainServer
                 endpoints.MapGet("/who", async context =>
                 {
                     
-                    string result = GetRandomWord(who);
-                    quote.Who = result;
+                    string result = GetRandom(who);
+                    
                     context.Response.ContentType = "text/html; charset=utf-8";
                     context.Response.Headers.Add("InCamp-Student", "Shmyhol Roman");
                     await context.Response.WriteAsync(result);
                 });
                 endpoints.MapGet("/how", async context =>
                 {
-                    string result = GetRandomWord(how);
-                    quote.How = result;
+                    string result = GetRandom(how);
+                    
                     context.Response.ContentType = "text/html; charset=utf-8";
                     context.Response.Headers.Add("InCamp-Student", "Shmyhol Roman");
                     await context.Response.WriteAsync(result);
                 });
                 endpoints.MapGet("/does", async context =>
                 {
-                    string result = GetRandomWord(does);
-                    quote.Does = result; 
+                    string result = GetRandom(does);
+                    
                     context.Response.ContentType = "text/html; charset=utf-8";
                     context.Response.Headers.Add("InCamp-Student", "Shmyhol Roman");
                     await context.Response.WriteAsync(result);
                 });
                 endpoints.MapGet("/what", async context =>
                 {
-                    string result = GetRandomWord(what);
-                    quote.What = result;
+                    string result = GetRandom(what);
+                    
                     context.Response.ContentType = "text/html; charset=utf-8";
                     context.Response.Headers.Add("InCamp-Student", "Shmyhol Roman");
                     await context.Response.WriteAsync(result);
@@ -89,118 +120,50 @@ namespace MainServer
                 endpoints.MapGet("/quote", async context =>
                 {
                     context.Response.ContentType = "text/html; charset=utf-8";
-                    await context.Response.WriteAsync(quote.ToString());
+                    StringBuilder result = new StringBuilder();
+                    foreach(var path in paths)
+                    {
+                        
+                    }
+                    await context.Response.WriteAsync(result.ToString());
                 });
 
                 endpoints.MapGet("/incamp18-quote", async context =>
                 {
-                    string[] paths = {"who", "how", "does", "what"}; 
-                    string[] urls = {"http://localhost:1234/",
-                                     "http://localhost:56555/",  
-                                     "http://546906f46143.ngrok.io/", 
-                                     "http://a88b942d765c.ngrok.io/", 
-                                     "http://ab95f7fa1783.ngrok.io/", 
-                                     "http://72264496c037.ngrok.io/", 
-                                     "http://81b49b859709.ngrok.io/", 
-                                     "http://b25753c8cc31.ngrok.io/", 
-                                     "http://5788514b9e11.ngrok.io/"
-                                    };
-                    StringBuilder result = new StringBuilder();
-                    DateTime start = DateTime.Now;
-                   
-                    Task<string> who = GetDataFromUrl(GetRandomUrl(urls), paths[0]);
-                    Task<string> how = GetDataFromUrl(GetRandomUrl(urls), paths[1]);
-                    Task<string> does = GetDataFromUrl(GetRandomUrl(urls), paths[2]);
-                    Task<string> what = GetDataFromUrl(GetRandomUrl(urls), paths[3]);
-
-                    quote.Who = await who;
-                    quote.How = await how;
-                    quote.Does = await does;
-                    quote.What = await what;
                     
-                    DateTime finish = DateTime.Now;
-                    Console.WriteLine(finish - start);
+                    DateTime start = DateTime.Now;
                     context.Response.Headers.Add("InCamp-Student", "Shmyhol Roman");
                     context.Response.ContentType = "text/html; charset=utf8";
+                    Task<Response> response = request.Apply(urls, paths);
+                    DateTime finish = DateTime.Now;
+                    var time = finish - start;
+                    profiler.AddTime(time);
+                    await context.Response.WriteAsync(response.Result.GetResponse() + "<br>\n" + profiler.GetProccessTime());
                     
-                    await context.Response.WriteAsync(quote.ToString() + "<br>" + users.GetUserOperationList());
-                    users.Clear();
-                   
+                    
+                    response.Result.Clear();
                 });
                 
             });
         }
+        public string GetRandom(string[] arr)
+         {
+             Random random = new Random();
+             int i = random.Next(0, arr.Length);
+             return arr[i];
+         }
 
-        public string GetRandomWord(string[] words)
-        {
-            Random random = new Random();
-            int i = random.Next(0, words.Length);
-            return words[i];
-        }
-        public string GetRandomUrl(string[] ips)
-        {
-            Random rm = new Random();
-            int i = rm.Next(0, ips.Length);
-            return ips[i];
-        }
+         public IHttpRequest GetHttpRequest(string arg = "sync")
+         {
+             if(arg.Equals("async"))
+             {
+                 return new Async();
+             }
 
-    
-        public async Task<string> GetDataFromUrl(string url, string path)
-        { 
-            try
-            {
-                return await RequestToAnotherServer(url, path);
-            }
-            catch (WebException)
-            {
-                return await RequestToLocalServer(url, path);
-            }
-        }
-        public async Task<string> RequestToAnotherServer(string url, string path)
-        {
-            string word;
-            User usr = new User();
+             return new Sync();
+         }
 
-            HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url+path);
-
-            using(WebResponse response = await httpWebRequest.GetResponseAsync())
-            using(Stream dataStream = response.GetResponseStream())
-            using(StreamReader reader = new StreamReader(dataStream))
-            {
-                
-                string userName = response.Headers.GetValues("InCamp-Student").First();
-                word = await reader.ReadToEndAsync();
-                
-                usr.Name = userName;
-                usr.Operation = word; 
-                users.AddUser(usr);
-            }
-
-            return await Task.Run(()=>usr.Operation);   
-        }
-         public async Task<string> RequestToLocalServer(string url, string path)
-        {
-            const string mainUrl = "http://localhost:56555/";
-            string word;
-            User usr = new User();
-
-            HttpWebRequest httpWebRequest = WebRequest.CreateHttp(mainUrl+path);
-
-            using(WebResponse response = await httpWebRequest.GetResponseAsync())
-            using(Stream dataStream = response.GetResponseStream())
-            using(StreamReader reader = new StreamReader(dataStream))
-            {
-                
-                string userName = response.Headers.GetValues("InCamp-Student").First();
-                word = await reader.ReadToEndAsync();
-                
-                usr.Name = $"{userName}, because {url} doesn't have response!";
-                usr.Operation = word; 
-                users.AddUser(usr);
-            }
-
-            return await Task.Run(()=>usr.Operation);   
-        }
+        
         
     }
 }
