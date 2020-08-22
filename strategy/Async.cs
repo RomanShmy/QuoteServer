@@ -24,7 +24,9 @@ namespace MainServer.strategy
             Task<string> how = GetDataFromUrl(GetRandom(urls), paths[1]);
             Task<string> does = GetDataFromUrl(GetRandom(urls), paths[2]);
             Task<string> what = GetDataFromUrl(GetRandom(urls), paths[3]);
-                
+            
+            await Task.WhenAll(who, how, does, what);
+
             quote.Who = await who;
             quote.How = await how;
             quote.Does = await does;
@@ -37,7 +39,7 @@ namespace MainServer.strategy
         public string GetRandom(string[] arr)
          {
              Random random = new Random();
-             int i = random.Next(0, arr.Length);
+             int i = random.Next(1, arr.Length);
              return arr[i];
          }
         
@@ -57,8 +59,8 @@ namespace MainServer.strategy
             string word, userName;
             User usr = new User();
 
-            HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url+path);
-
+            HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url + path);
+            Console.WriteLine(url);
             using(WebResponse response = await httpWebRequest.GetResponseAsync())
             using(Stream dataStream = response.GetResponseStream())
             using(StreamReader reader = new StreamReader(dataStream))
@@ -75,25 +77,16 @@ namespace MainServer.strategy
         }
          public async Task<string> RequestToLocalServer(string url, string path)
         {
-            const string mainUrl = "http://localhost:56555/";
-            string word, userName;
-            User usr = new User();
+            DataStorage dataStorage = new DataStorage();
+             
+             User usr = new User();
+             usr.Name = $"Shmyhol Roman, because {url} doesn't have response!";
+             var s = dataStorage.GetQuoteElements().Where(arr => arr[0].Equals(path)).First();
+             usr.Operation = GetRandom(s.ToArray()); 
+             users.AddUser(usr);
+            
 
-            WebRequest httpWebRequest = WebRequest.Create(mainUrl+path);
-
-            using(WebResponse response = await httpWebRequest.GetResponseAsync())
-            using(Stream dataStream = response.GetResponseStream())
-            using(StreamReader reader = new StreamReader(dataStream))
-            {
-                userName = response.Headers.GetValues("InCamp-Student").First();
-                word = reader.ReadToEnd();
-            }
-
-            usr.Name = $"{userName}, because {url} doesn't have response!";
-            usr.Operation = word; 
-            users.AddUser(usr);
-
-            return usr.Operation;   
+             return await Task.Run(()=> usr.Operation);  
         }
 
     }

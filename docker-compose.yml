@@ -1,0 +1,19 @@
+version: '2.4'
+services:
+  service:
+    build: .
+    ports: 
+        - "5000-5010:80"
+    scale: 10
+    environment: 
+        - count=10 
+    mem_limit: 50m
+
+
+
+
+
+  
+  
+  
+  
